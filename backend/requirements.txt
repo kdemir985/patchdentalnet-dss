@@ -15,12 +15,13 @@ shap==0.46.0
 # For the desktop app window (app_window.py):
 pywebview==6.2.1
 
-# torch / torchvision are installed separately (see kds/BASLA.md) - a special
-# index-url is needed to get the CUDA build, not covered by a plain pip install
-# from this file.
+# torch / torchvision are installed separately - a special index-url is
+# needed to get the CUDA build, not covered by a plain pip install from
+# this file.
 #
-# NOTE: this English variant (kds-en) is designed to share the SAME Python
-# venv and trained models as the Turkish kds/ app (see predictor.py's
-# MODELS_DIR) - you normally do NOT need to pip install anything here if
-# kds/backend/.venv already has everything above installed. This file exists
-# for reference / in case you want a fully independent venv instead.
+# NOTE: this app is designed to share a single Python venv and trained
+# models directory with a sibling instance of this project (see
+# predictor.py's MODELS_DIR) - you normally do NOT need to pip install
+# anything here if that shared venv already has everything above installed.
+# This file exists for reference / in case you want a fully independent
+# venv instead.

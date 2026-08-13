@@ -1,44 +1,79 @@
 # PatchDentalNet DSS
 
-A clinical decision support desktop application for PatchDentalNet, packaged
-to launch like a regular desktop app from an icon instead of a browser tab.
+A clinical decision support interface for **PatchDentalNet**, a hybrid
+VGG19 + ResNet152 + PatchAttention deep learning model for lesion
+classification (No Lesion / Radiolucent / Radiopaque / Mixed) on dental
+panoramic radiographs. The interface exposes the trained model's
+predictions, confidence, triage level, and SHAP-based explainability
+through a lightweight FastAPI backend and a dependency-free HTML/CSS/JS
+frontend.
 
-## How to launch
+## Features
 
-Double-click the **"PatchDentalNet DSS"** icon on the Desktop. A loading
-screen appears immediately; the full app window replaces it once the AI
-models finish loading (up to ~30 seconds on first launch).
+- **Case intake** — case ID, patient age/gender, chief complaint, and
+  clinical notes alongside the radiograph upload
+- **Preprocessing visualization** — CLAHE + Unsharp Masking output and the
+  2×8 anatomical patch grid used by the model, shown before classification
+- **Prediction panel** — predicted class, confidence score, triage level,
+  class probability distribution, and structured clinical findings
+- **Model focus map** — attention-weighted patch grid highlighting the
+  regions that most influenced the prediction
+- **SHAP explainability report** — per-class feature-group attribution
+  (attention context, patch statistics, softmax scores) computed live for
+  the submitted case
+- **Report export** — downloadable HTML and JSON case reports
 
-If something goes wrong and you want to see the error output, run
-`START_DEBUG.bat` instead (opens a console window with logs).
+## Architecture
 
-## Project layout and requirements
+- **Backend** — FastAPI (`backend/main.py`), serving both the REST API
+  (`/api/predict`, `/api/shap-report`, `/api/health`) and the static
+  frontend from a single process
+- **Inference pipeline** — `cnn_arch.py` (CNN feature extraction) +
+  `svm_pipeline.py` (PCA + BorderlineSMOTE + SVM ensemble classifier, with
+  live SHAP explanation) — see `predictor.py` for the orchestration
+- **Frontend** — plain HTML/CSS/JavaScript, no build step or framework
+  dependency
 
-This repository contains only the application **code**. It expects a sibling
-`kds/backend/` directory (one level above this project's parent folder) that
-provides:
+## Requirements
 
-- `kds/backend/models/` — the trained model files (`seed_42/`, `seed_123/`,
-  `seed_456/`, each containing `patchdentalnet.pth`) and the cached
-  `svm_pipeline.joblib` + `features/` directory. Not included in this
-  repository due to size (~1GB); available on request.
-- `kds/backend/.venv/` — the Python virtual environment used to run the app
-  (see `backend/requirements.txt` for the package list).
+- Python 3.10+, plus the packages listed in `backend/requirements.txt`
+- PyTorch/torchvision (CUDA build recommended), installed separately
+- Trained model weights (not included in this repository, see below)
 
-If you're setting this up from scratch, create `kds/backend/.venv`, install
-the requirements there, and place the trained models under
-`kds/backend/models/` before launching.
+## Setup
 
-The app runs on **port 8001** by default (see `backend/main.py`), so it can
-run alongside another instance on port 8000 without conflicting.
+```bash
+cd backend
+pip install -r requirements.txt
+# install torch/torchvision separately for your platform/CUDA version
+python main.py
+```
 
-## Files
+Then open `http://localhost:8001` in a browser.
 
-- `icon.ico` — the desktop shortcut's icon (generated to match the in-app logo)
-- `backend/app_window.py` — desktop app launcher (runs the API server in a
-  background thread + opens it in a native window via `pywebview`, no
-  browser address bar)
-- `backend/main.py` — FastAPI app, serves the frontend and the prediction/SHAP endpoints
-- `backend/predictor.py`, `svm_pipeline.py`, `cnn_arch.py` — inference pipeline
-  (preprocessing, CNN feature extraction, SVM ensemble, SHAP explainability)
-- `frontend/` — HTML/CSS/JS interface (no build step)
+## Model weights
+
+Trained model weights are not included in this repository due to their
+size (~1GB) and are not required to review the source code. By default,
+`predictor.py` resolves `MODELS_DIR` two directories up from `backend/`
+(see the `SHARED_BACKEND_DIR` constant) and expects: three CNN checkpoints
+(`seed_42/`, `seed_123/`, `seed_456/`, each containing
+`patchdentalnet.pth`), the cached SVM ensemble (`svm_pipeline.joblib`),
+and the `features/` directory used to rebuild the SHAP background set.
+Adjust `MODELS_DIR` to point at wherever you place these files. Weights
+are available on request.
+
+## Project layout
+
+```
+backend/
+  main.py           FastAPI application and API routes
+  predictor.py       Inference orchestration (preprocessing -> CNN -> SVM -> SHAP)
+  cnn_arch.py         CNN architecture and feature extraction
+  svm_pipeline.py     SVM ensemble classifier and SHAP explainability
+  requirements.txt
+frontend/
+  index.html
+  css/style.css
+  js/app.js
+```
