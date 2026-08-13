@@ -9,10 +9,10 @@ and pipeline details).
 Mock mode: produces a fake-but-plausible result from image statistics,
 used to test the UI when model files are unavailable.
 
-NOTE: this is the English variant of the app (kds-en/). It shares the
-same trained models and Python venv as the Turkish original (kds/) via
-MODELS_DIR pointing one level up - see the path below. Do not duplicate
-the multi-GB model files here.
+NOTE: model weights and the Python venv are not stored in this repository
+(multi-GB, excluded via .gitignore). MODELS_DIR below resolves to a
+`kds/backend/models` directory expected next to this project's parent
+folder - see README.md for how to set this up.
 """
 
 import logging
@@ -27,7 +27,7 @@ log = logging.getLogger("predictor")
 MODE = "real"  # "mock" | "real"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# Reuse the Turkish app's models/venv instead of duplicating ~1GB of weights.
+# Reuse a sibling app's models/venv instead of duplicating ~1GB of weights.
 SHARED_BACKEND_DIR = os.path.normpath(os.path.join(BASE_DIR, "..", "..", "kds", "backend"))
 MODELS_DIR = os.path.join(SHARED_BACKEND_DIR, "models")
 FEATURES_DIR = os.path.join(MODELS_DIR, "features")
@@ -311,8 +311,8 @@ class DentalPredictor:
             if not os.path.exists(model_path):
                 raise FileNotFoundError(
                     f"Model file not found: {model_path}\n"
-                    f"This app shares its models with the Turkish kds/ app - make sure "
-                    f"kds/backend/models is populated (see kds/backend/models/NEREYE_KOYULACAK.txt)."
+                    f"This app expects trained models under kds/backend/models - make sure "
+                    f"that directory is populated with the seed_{{42,123,456}}/patchdentalnet.pth files."
                 )
             model = PatchDentalNet(self.cfg)
             state = torch.load(model_path, map_location=self.device)

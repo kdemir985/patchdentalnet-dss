@@ -1,5 +1,5 @@
 /* ============================================================
-   PatchDentalNet DSS — Frontend Logic (English variant)
+   PatchDentalNet DSS — Frontend Logic
    The backend is served from the same origin, so requests use a
    relative path (/api/...) — no separate address is needed.
    ============================================================ */

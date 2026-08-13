@@ -1,5 +1,5 @@
 """
-Dental DSS - Backend API (English variant)
+Dental DSS - Backend API
 =========================
 Run:
     cd backend
@@ -9,8 +9,8 @@ Run:
 Then open in a browser:  http://localhost:8001
 (The frontend is served from this same backend, no separate server needed.)
 
-Runs on port 8001 (not 8000) so it can coexist with the Turkish kds/ app,
-which it shares its models and Python venv with.
+Runs on port 8001 by default so it can coexist with another instance of
+this app running on port 8000.
 """
 
 import io
