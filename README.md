@@ -10,6 +10,9 @@ frontend.
 
 ## Demo
 
+A walkthrough of a case submission, the prediction panel, the model focus
+map, and the SHAP explainability report.
+
 <video src="https://github.com/kdemir985/patchdentalnet-dss/raw/master/assets/demo.mp4" controls width="720"></video>
 
 ## Features
