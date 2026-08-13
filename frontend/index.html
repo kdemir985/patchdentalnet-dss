@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PatchDentalNet DSS | Panoramic Radiograph Decision Support System</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-logo" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect x="1" y="1" width="46" height="46" rx="13" fill="url(#logoGrad)"/>
+      <path d="M24 13c-3.2 0-5.1 1.7-6.9 1.7-1.6 0-2.8-1-4.3-1-2.6 0-5.3 2.2-5.3 6.9 0 4.3 3.1 12.4 5.6 12.4 1.5 0 2-1 3.3-1 1.3 0 1.6 1 3.3 1 1.1 0 1.6-1.1 2.1-2.4.2-.6 1.1-.6 1.4 0 .5 1.3 1 2.4 2.1 2.4 1.7 0 2-1 3.3-1 1.3 0 1.8 1 3.3 1 2.5 0 5.6-8.1 5.6-12.4 0-4.7-2.7-6.9-5.3-6.9-1.5 0-2.7 1-4.3 1-1.8 0-3.7-1.7-6.9-1.7Z" fill="#fff"/>
+      <circle cx="24" cy="23" r="2.1" fill="#2a78d6"/>
+      <defs>
+        <linearGradient id="logoGrad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#3987e5"/>
+          <stop offset="1" stop-color="#184f95"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <div class="brand-text">
+      <div class="brand-title">PatchDentalNet <span>DSS</span></div>
+      <div class="brand-sub">Panoramic Radiograph Decision Support System</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span id="modelBadge" class="badge badge-muted">
+      <span class="badge-dot"></span> Checking model status…
+    </span>
+  </div>
+</header>
+
+<main id="mainLayout" class="layout app-screen">
+
+  <!-- LEFT: INPUT -->
+  <section class="col col-input">
+
+    <div class="card">
+      <div class="card-head">
+        <span class="step-num">1</span>
+        <h2>Case Information</h2>
+      </div>
+      <form id="caseForm" class="form-grid">
+        <label class="field">
+          <span class="field-label">Case ID</span>
+          <input type="text" id="caseId" name="caseId" />
+        </label>
+        <label class="field">
+          <span class="field-label">Age</span>
+          <input type="number" id="age" name="age" min="0" max="120" placeholder="—" />
+        </label>
+        <label class="field field-wide">
+          <span class="field-label">Gender</span>
+          <select id="gender" name="gender">
+            <option value="Not specified">Not specified</option>
+            <option value="Female">Female</option>
+            <option value="Male">Male</option>
+          </select>
+        </label>
+        <label class="field field-wide">
+          <span class="field-label">Chief Complaint / Background</span>
+          <textarea id="complaint" name="complaint" rows="2" placeholder="E.g.: Pain, swelling, history of trauma…"></textarea>
+        </label>
+        <label class="field field-wide">
+          <span class="field-label">Clinical Notes</span>
+          <textarea id="notes" name="notes" rows="2" placeholder="E.g.: Tooth number, restoration, prior treatment…"></textarea>
+        </label>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="step-num">2</span>
+        <h2>Image</h2>
+      </div>
+
+      <label id="dropzone" class="dropzone" for="fileInput">
+        <input type="file" id="fileInput" accept="image/png,image/jpeg" hidden />
+
+        <div id="dropzoneEmpty" class="dropzone-empty">
+          <svg viewBox="0 0 24 24" width="34" height="34" fill="none" aria-hidden="true">
+            <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke="#2a78d6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="#2a78d6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p class="dropzone-title">Upload a panoramic radiograph</p>
+          <p class="dropzone-hint">PNG or JPG — drag & drop or click</p>
+        </div>
+
+        <img id="previewImg" class="preview-img hidden" alt="Uploaded radiograph preview" />
+      </label>
+
+      <button type="button" id="clearImageBtn" class="btn btn-ghost hidden">Remove image</button>
+    </div>
+
+    <button type="button" id="runBtn" class="btn btn-primary btn-run" disabled>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+        <path d="M12 2a5 5 0 0 0-5 5v2.1A5.5 5.5 0 0 0 4 14v1a5 5 0 0 0 3 4.58V21h10v-1.42A5 5 0 0 0 20 15v-1a5.5 5.5 0 0 0-3-4.9V7a5 5 0 0 0-5-5Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M9 11h.01M15 11h.01M9.5 15c.7.6 1.6.9 2.5.9s1.8-.3 2.5-.9" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      Run DSS Analysis
+    </button>
+  </section>
+
+  <!-- RIGHT: RESULTS -->
+  <section class="col col-results">
+
+    <div id="resultsEmpty" class="card empty-state">
+      <svg viewBox="0 0 24 24" width="40" height="40" fill="none" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="16" rx="2.5" stroke="#b9c6d6" stroke-width="1.6"/>
+        <path d="M7 9h10M7 13h6" stroke="#b9c6d6" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <p>Once you upload an image and run the analysis,<br/>the evaluation results will appear here.</p>
+    </div>
+
+    <div id="resultsContent" class="hidden">
+
+      <div class="card stat-row">
+        <div class="stat-tile">
+          <span class="stat-label">Prediction</span>
+          <span class="stat-value" id="statPrediction">—</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-label">Confidence</span>
+          <span class="stat-value" id="statConfidence">—</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-label">Triage</span>
+          <span class="stat-value" id="statTriage">
+            <span id="triageDot" class="triage-dot"></span>
+            <span id="statTriageText">—</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Class Probabilities</h2>
+        <div id="probChart" class="prob-chart" role="img" aria-label="Class probabilities bar chart"></div>
+      </div>
+
+      <div id="attentionCard" class="card hidden">
+        <h2>Model Attention Map</h2>
+        <p class="attn-hint">Regions the model "attended to" most while making its prediction are shown in darker orange.</p>
+        <div class="attention-map">
+          <img id="attentionImg" class="attention-img" alt="Model attention map" />
+          <div id="attentionGrid" class="attention-grid"></div>
+        </div>
+        <div class="attn-legend">
+          <span>Low attention</span>
+          <span class="attn-legend-bar"></span>
+          <span>High attention</span>
+        </div>
+        <p id="focusRegionText" class="focus-region-text"></p>
+        <p id="focusReasonText" class="focus-reason-text"></p>
+        <p class="attn-disclaimer">Note: This is not a bounding-box lesion detection — the model is a classifier that assigns a single class label to the whole image. The map shows which region it "looked at" most when making its decision.</p>
+      </div>
+
+      <div id="shapCard" class="card hidden">
+        <button type="button" id="shapReportBtn" class="btn btn-primary shap-report-btn">SHAP Analysis</button>
+      </div>
+
+      <div class="card">
+        <h2>DSS Findings</h2>
+        <ul id="findingsList" class="findings-list"></ul>
+      </div>
+
+      <div class="card suggestion-card">
+        <h2>Suggestion</h2>
+        <p id="suggestionText"></p>
+        <button type="button" id="guidanceBtn" class="btn btn-primary guidance-btn">View Detailed Guidance</button>
+      </div>
+
+      <div class="card actions-row">
+        <button type="button" id="downloadHtmlBtn" class="btn btn-secondary">Download Report (HTML)</button>
+        <button type="button" id="downloadJsonBtn" class="btn btn-secondary">Download Output (JSON)</button>
+      </div>
+
+      <p class="disclaimer">Note: This output is a decision support suggestion; clinician evaluation is required for a definitive diagnosis.</p>
+    </div>
+
+    <div id="loadingOverlay" class="loading-overlay hidden">
+      <div class="spinner"></div>
+      <p>Analyzing…</p>
+    </div>
+
+    <div id="errorBanner" class="error-banner hidden"></div>
+
+  </section>
+
+</main>
+
+<div id="shapReportScreen" class="app-screen hidden">
+  <div class="screen-topbar">
+    <button type="button" id="shapReportBackBtn" class="btn btn-ghost screen-back-btn">← Back to results</button>
+    <span class="screen-title">SHAP Analysis Report</span>
+  </div>
+  <div id="shapReportBody" class="screen-body"></div>
+</div>
+
+<div id="guidanceScreen" class="app-screen hidden">
+  <div class="screen-topbar">
+    <button type="button" id="guidanceBackBtn" class="btn btn-ghost screen-back-btn">← Back to results</button>
+    <span class="screen-title">Detailed Clinical Guidance</span>
+  </div>
+  <div id="guidanceBody" class="screen-body"></div>
+</div>
+
+<footer class="footer">
+  PatchDentalNet · TÜBİTAK 1002-A · Erzurum Technical University
+</footer>
+
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+pillow==10.4.0
+numpy>=2
+
+# For the real model (CNN + SVM ensemble):
+opencv-python-headless==4.10.0.84
+scikit-learn==1.5.2
+imbalanced-learn==0.12.4
+optuna==3.6.1
+joblib==1.4.2
+shap==0.46.0
+
+# For the desktop app window (app_window.py):
+pywebview==6.2.1
+
+# torch / torchvision are installed separately (see kds/BASLA.md) - a special
+# index-url is needed to get the CUDA build, not covered by a plain pip install
+# from this file.
+#
+# NOTE: this English variant (kds-en) is designed to share the SAME Python
+# venv and trained models as the Turkish kds/ app (see predictor.py's
+# MODELS_DIR) - you normally do NOT need to pip install anything here if
+# kds/backend/.venv already has everything above installed. This file exists
+# for reference / in case you want a fully independent venv instead.
