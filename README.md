@@ -8,6 +8,10 @@ predictions, confidence, triage level, and SHAP-based explainability
 through a lightweight FastAPI backend and a dependency-free HTML/CSS/JS
 frontend.
 
+## Demo
+
+<video src="https://github.com/kdemir985/patchdentalnet-dss/raw/master/assets/demo.mp4" controls width="720"></video>
+
 ## Features
 
 - **Case intake** — case ID, patient age/gender, chief complaint, and
