@@ -21,6 +21,10 @@ map, and the SHAP explainability report.
   clinical notes alongside the radiograph upload
 - **Preprocessing visualization** — CLAHE + Unsharp Masking output and the
   2×8 anatomical patch grid used by the model, shown before classification
+- **Input validation** — uploads that are not dental panoramic radiographs
+  (color photos, screenshots, charts) are rejected instead of being
+  classified, based on grayscale/aspect-ratio checks and the feature
+  distance to the training distribution
 - **Prediction panel** — predicted class, confidence score, triage level,
   class probability distribution, and structured clinical findings
 - **Model focus map** — attention-weighted patch grid highlighting the

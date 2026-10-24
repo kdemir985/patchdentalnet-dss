@@ -36,6 +36,46 @@ SEEDS = [42, 123, 456]
 
 CLASSES = ["No Lesion", "Radiolucent", "Radiopaque", "Mixed"]
 
+# ── Input validation (out-of-distribution guard) ──────────────────────────
+# The classifier always assigns one of the 4 classes, so non-panoramic inputs
+# (photos, screenshots, charts) must be rejected before a result is shown.
+# Thresholds were calibrated on the training data and on external panoramics:
+#   - chroma: training panoramics are grayscale (mean chroma <= 0.12 / 255)
+#   - aspect: training panoramics span 1.51-3.20 (width / height)
+#   - distance: Mahalanobis distance of the 1557-dim feature in the PCA85
+#     space; training/test panoramics ~9-25, external panoramics <= 38,
+#     non-panoramic images that pass the first two checks >= 76.
+MAX_MEAN_CHROMA = 3.0
+ASPECT_RANGE = (1.4, 3.5)
+MAX_FEATURE_DISTANCE = 50.0
+
+
+INVALID_IMAGE_MESSAGE = "Invalid image. Please upload a panoramic radiograph."
+
+
+class InvalidImageError(ValueError):
+    """Raised when the uploaded image is not a dental panoramic radiograph.
+
+    The user always sees INVALID_IMAGE_MESSAGE; the specific reason is logged.
+    """
+
+    def __init__(self, reason: str):
+        log.info(f"Image rejected: {reason}")
+        super().__init__(INVALID_IMAGE_MESSAGE)
+
+
+def _check_image_properties(image: Image.Image):
+    w, h = image.size
+    aspect = w / h
+    if not ASPECT_RANGE[0] <= aspect <= ASPECT_RANGE[1]:
+        raise InvalidImageError(f"aspect ratio {aspect:.2f} outside {ASPECT_RANGE}")
+    small = image.convert("RGB").resize((256, max(1, int(256 / aspect))))
+    a = np.asarray(small, dtype=np.float32)
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    chroma = float(((np.abs(r - g) + np.abs(g - b) + np.abs(r - b)) / 3).mean())
+    if chroma > MAX_MEAN_CHROMA:
+        raise InvalidImageError(f"color image (mean chroma {chroma:.2f} > {MAX_MEAN_CHROMA})")
+
 TRIAGE_RULES = {
     "No Lesion": {
         "triage": "Low",
@@ -345,15 +385,30 @@ class DentalPredictor:
             log.warning(f"Could not prepare SHAP background summary (SHAP panel will be disabled): {e}")
             self._shap_background = None
 
-    def _predict_real(self, image: Image.Image):
+    def _feature_distance(self, feature_1557: np.ndarray) -> float:
+        """Mahalanobis distance to the training distribution in the PCA85 space."""
+        pca = self.svm["pca_85"]
+        z = pca.transform(self.svm["scaler"].transform(feature_1557.reshape(1, -1)))[0]
+        return float(np.sqrt((z ** 2 / pca.explained_variance_).sum()))
+
+    def _extract_validated_feature(self, image: Image.Image) -> np.ndarray:
         from cnn_arch import extract_feature_vector, image_to_patch_tensor
 
+        _check_image_properties(image)
         patches_tensor = image_to_patch_tensor(image, self.cfg)
-
-        feats = []
-        for model in self.cnn_models:
-            feats.append(extract_feature_vector(model, patches_tensor, self.device))
+        feats = [extract_feature_vector(m, patches_tensor, self.device) for m in self.cnn_models]
         feature_1557 = np.mean(feats, axis=0)  # average of 3 seeds (same as extract_features.py)
+
+        distance = self._feature_distance(feature_1557)
+        log.info(f"Feature distance to training distribution: {distance:.1f}")
+        if distance > MAX_FEATURE_DISTANCE:
+            raise InvalidImageError(
+                f"feature distance {distance:.1f} > {MAX_FEATURE_DISTANCE} (out of distribution)"
+            )
+        return feature_1557
+
+    def _predict_real(self, image: Image.Image):
+        feature_1557 = self._extract_validated_feature(image)
 
         proba = self.svm_pipeline.predict_proba(self.svm, feature_1557)
         probs_dict = {CLASSES[i]: float(proba[i]) for i in range(len(CLASSES))}
@@ -384,6 +439,7 @@ class DentalPredictor:
         if self.mode == "real":
             probs_dict, patch_attention, focus_region, shap_groups = self._predict_real(image)
         else:
+            _check_image_properties(image)
             probs_dict = self._predict_mock(image)
             patch_attention = None
             focus_region = None
@@ -433,11 +489,7 @@ class DentalPredictor:
         if self._shap_background is None:
             raise RuntimeError("SHAP background summary is not ready (see server logs).")
 
-        from cnn_arch import extract_feature_vector, image_to_patch_tensor
-
-        patches_tensor = image_to_patch_tensor(image, self.cfg)
-        feats = [extract_feature_vector(m, patches_tensor, self.device) for m in self.cnn_models]
-        feature_1557 = np.mean(feats, axis=0)
+        feature_1557 = self._extract_validated_feature(image)
 
         proba = self.svm_pipeline.predict_proba(self.svm, feature_1557)
         probs_dict = {CLASSES[i]: float(proba[i]) for i in range(len(CLASSES))}

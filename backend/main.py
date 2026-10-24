@@ -17,12 +17,12 @@ import io
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
 
-from predictor import DentalPredictor
+from predictor import INVALID_IMAGE_MESSAGE, DentalPredictor, InvalidImageError
 
 BASE_DIR = Path(__file__).resolve().parent
 FRONTEND_DIR = BASE_DIR.parent / "frontend"
@@ -37,6 +37,13 @@ app.add_middleware(
 )
 
 predictor = DentalPredictor()
+
+
+def _load_image(contents: bytes) -> Image.Image:
+    try:
+        return Image.open(io.BytesIO(contents)).convert("RGB")
+    except Exception:
+        raise HTTPException(status_code=400, detail=INVALID_IMAGE_MESSAGE)
 
 
 @app.get("/api/health")
@@ -57,8 +64,7 @@ async def predict(
     complaint: str = Form(""),
     notes: str = Form(""),
 ):
-    contents = await image.read()
-    img = Image.open(io.BytesIO(contents)).convert("RGB")
+    img = _load_image(await image.read())
 
     case_info = {
         "case_id": case_id,
@@ -68,15 +74,19 @@ async def predict(
         "notes": notes,
     }
 
-    result = predictor.predict(img, case_info)
-    return result
+    try:
+        return predictor.predict(img, case_info)
+    except InvalidImageError as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
 
 @app.post("/api/shap-report")
 async def shap_report(image: UploadFile = File(...)):
-    contents = await image.read()
-    img = Image.open(io.BytesIO(contents)).convert("RGB")
-    return predictor.build_shap_report(img)
+    img = _load_image(await image.read())
+    try:
+        return predictor.build_shap_report(img)
+    except InvalidImageError as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
 
 # Serve frontend static files at the root path (must be mounted last)

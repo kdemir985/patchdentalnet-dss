@@ -154,14 +154,29 @@ runBtn.addEventListener("click", async () => {
   formData.append("complaint", complaintInput.value);
   formData.append("notes", notesInput.value);
 
+  let res;
   try {
-    const res = await fetch(API_PREDICT, { method: "POST", body: formData });
-    if (!res.ok) throw new Error(`Server error (${res.status})`);
+    res = await fetch(API_PREDICT, { method: "POST", body: formData });
+  } catch (err) {
+    showError(`Analysis failed: ${err.message}. Make sure the backend (main.py) is running.`);
+    setLoading(false);
+    return;
+  }
+  try {
+    if (!res.ok) {
+      // 400/422: the backend rejected the file (unreadable or not a panoramic radiograph)
+      const message = await readErrorDetail(res);
+      lastResult = null;
+      resultsContent.classList.add("hidden");
+      resultsEmpty.classList.remove("hidden");
+      showError(message);
+      return;
+    }
     const result = await res.json();
     lastResult = result;
     renderResults(result);
   } catch (err) {
-    showError(`Analysis failed: ${err.message}. Make sure the backend (main.py) is running.`);
+    showError(`Analysis failed: ${err.message}`);
   } finally {
     setLoading(false);
   }
@@ -170,6 +185,16 @@ runBtn.addEventListener("click", async () => {
 function setLoading(isLoading) {
   loadingOverlay.classList.toggle("hidden", !isLoading);
   runBtn.disabled = isLoading || !selectedFile;
+}
+
+async function readErrorDetail(res) {
+  try {
+    const body = await res.json();
+    if (typeof body.detail === "string") return body.detail;
+  } catch (_) {
+    // non-JSON error body
+  }
+  return `Server error (${res.status})`;
 }
 
 function showError(msg) {
@@ -343,7 +368,7 @@ if (shapReportBtn) {
       const formData = new FormData();
       formData.append("image", selectedFile);
       const res = await fetch(API_SHAP_REPORT, { method: "POST", body: formData });
-      if (!res.ok) throw new Error(`Server error (${res.status})`);
+      if (!res.ok) throw new Error(await readErrorDetail(res));
       const data = await res.json();
       shapReportBody.innerHTML = renderShapReportBody(data, caseIdInput.value);
       switchToScreen(shapReportScreen);
